@@ -1,6 +1,6 @@
 <template>
   <div id="app">
-    <VueApiUi/>
+    <VueApiUi @action="test"/>
   </div>
 </template>
 
@@ -8,7 +8,12 @@
 
 export default {
   name: 'App',
-  components: {}
+  components: {},
+  methods: {
+    test(data) {
+      console.log('data', data)
+    },
+  }
 }
 </script>
 

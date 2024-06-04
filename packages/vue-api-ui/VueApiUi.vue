@@ -3,42 +3,59 @@
 
     <!-- URL -->
     <div class="request-url">
-      <el-input placeholder="请输入内容" v-model="form.httpUrl" class="input-with-select">
-        <el-select v-model="form.httpMethod" slot="prepend" placeholder="请选择">
-          <el-option label="GET" value="get"></el-option>
-          <el-option label="POST" value="post"></el-option>
-          <el-option label="PUT" value="put"></el-option>
-          <el-option label="DELETE" value="delete"></el-option>
+      <el-input placeholder="请输入内容" v-model="form.url" class="input-with-select" @input="parseUrlToParams">
+        <el-select v-model="form.method" slot="prepend" placeholder="请选择">
+          <el-option label="GET" value="GET">
+            <span style="color: #3a995f;">GET</span>
+          </el-option>
+          <el-option label="POST" value="POST">
+            <span style="color: #af7e0a;">POST</span>
+          </el-option>
+          <el-option label="PUT" value="PUT">
+            <span style="color: #0556b9;">PUT</span>
+          </el-option>
+          <el-option label="PATCH" value="PATCH">
+            <span style="color: #623497;">PATCH</span>
+          </el-option>
+          <el-option label="DELETE" value="DELETE">
+            <span style="color: #8e1a10;">DELETE</span>
+          </el-option>
+          <el-option label="HEAD" value="HEAD">
+            <span style="color: #007f31;">HEAD</span>
+          </el-option>
+          <el-option label="OPTIONS" value="OPTIONS">
+            <span style="color: #b74386;">OPTIONS</span>
+          </el-option>
         </el-select>
-        <el-button slot="append" @click="send()">发送</el-button>
+        <el-button v-if="showAction" slot="append" @click="action()">{{ actionLabel }}</el-button>
       </el-input>
     </div>
 
     <!-- 请求头，请求体 -->
     <div class="request-content">
-      <el-tabs v-model="form.activeName" @tab-click="handleClick">
+      <el-tabs v-model="activeName">
 
         <el-tab-pane label="Params" name="params">
-          <key-value-table :value="form.ParamsData"/>
+          <key-value-table :value="form.query"/>
         </el-tab-pane>
 
         <el-tab-pane label="Headers" name="headers">
-          <key-value-table :value="form.HeadersData"/>
+          <key-value-table :value="form.header"/>
         </el-tab-pane>
 
         <el-tab-pane label="Body" name="body">
 
           <div class="content-type">
 
-            <el-radio-group v-model="form.contentType">
-              <el-radio :label="1">none</el-radio>
-              <el-radio :label="2">form-data</el-radio>
-              <el-radio :label="3">x-www-form-urlencoded</el-radio>
-              <el-radio :label="4">json</el-radio>
+            <el-radio-group v-model="form.body.mode" @input="onModeChanged">
+              <el-radio label="none">none</el-radio>
+              <el-radio label="formdata">form-data</el-radio>
+              <el-radio label="urlencoded">x-www-form-urlencoded</el-radio>
+              <el-radio label="json">json</el-radio>
             </el-radio-group>
 
             <el-button
-                v-if="form.contentType === 4"
+                v-if="form.body.mode === 'json'"
                 type="primary"
                 round
                 @click="beautify()"
@@ -47,16 +64,20 @@
 
           </div>
 
-          <template v-if="form.contentType === 2 || form.contentType === 3">
-            <key-value-table :value="form.FormData"/>
+          <template v-if="form.body.mode === 'formdata'">
+            <key-value-table :value="form.body.formdata"/>
           </template>
 
-          <template v-if="form.contentType === 4">
+          <template v-if="form.body.mode === 'urlencoded'">
+            <key-value-table :value="form.body.urlencoded"/>
+          </template>
+
+          <template v-if="form.body.mode === 'json'">
             <el-input
                 type="textarea"
                 :rows="6"
                 placeholder="RequestBody"
-                v-model="form.body"
+                v-model="form.body.raw"
                 style="margin-top: 10px">
             </el-input>
           </template>
@@ -104,36 +125,28 @@ export default {
       type: Boolean,
       default: true,
     },
+    showAction: {
+      type: Boolean,
+      default: true,
+    },
+    actionLabel: {
+      type: String,
+      default: '发送',
+    },
     value: {
       type: Object,
       default: function () {
         return {
-          httpUrl: null,
-          httpMethod: null,
-          activeName: 'params',
-          ParamsData: [{
-            key: 'name',
-            value: '王小虎',
-          }, {
-            key: 'age',
-            value: '20',
-          }],
-          HeadersData: [{
-            key: 'Content-Type',
-            value: 'application/json',
-          }, {
-            key: 'Connection',
-            value: 'keep-alive',
-          }],
-          FormData: [{
-            key: 'test1',
-            value: 'application',
-          }, {
-            key: 'test2',
-            value: 'asdfasdf',
-          }],
-          contentType: 1,
-          body: '{"deviceIp":"127.0.0.1","deviceId":"hj3452jgh345bghj345khj2345","serialNo":"1"}'
+          url: null,
+          method: 'GET',
+          header: [], // {key:'Content-Type',value:'application/json',}
+          query: [], // key, value
+          body: {
+            mode: 'none', // none formdata urlencoded json
+            raw: '',
+            formdata: [], // key, value
+            urlencoded: [], // key, value
+          }
         }
       }
     }
@@ -150,18 +163,127 @@ export default {
   },
   data() {
     return {
+      activeName: 'params',
       response: null
     }
   },
-  methods: {
-    handleClick(tab, event) {
-      console.log(tab, event)
+  watch: {
+    'form.query': {
+      handler: function (newVal) {
+        this.parseParamsToUrl(newVal)
+      },
+      deep: true
     },
-    send() {
-      console.log('form', this.form)
+  },
+  methods: {
+    parseUrlToParams(value) {
+      // 获取查询字符串
+      const queryString = value.split('?')[1]
+
+      // 初始化 query 数组
+      const query = []
+
+      // 如果存在查询字符串，解析参数
+      if (queryString) {
+        // 将查询字符串分割成键值对数组
+        const params = queryString.split('&')
+
+        // 遍历键值对数组
+        params.forEach(param => {
+          // 分割每个键值对成 key 和 value
+          const [key, value] = param.split('=')
+
+          // 将解析后的 key 和 value 添加到 query 数组中
+          query.push({key, value})
+        })
+      }
+
+      this.form.query = query
+    },
+    parseParamsToUrl(query) {
+      // 初始化查询字符串
+      let queryString = ''
+
+      // 遍历数组，构建查询字符串
+      query.forEach((param, index) => {
+
+        // 检查 key 是否是非空字符串
+        if (param.key) {
+          // 根据 value 是否为 null，构建 "key=value" 或 "key"
+          let paramStr = encodeURIComponent(param.key)
+          if (param.value !== null) {
+            paramStr += `=${encodeURIComponent(param.value)}`
+          }
+
+          // 如果不是第一个参数，前面加上 '&' 符号
+          if (index !== 0) {
+            queryString += '&'
+          }
+
+          queryString += paramStr
+        }
+
+      })
+
+      // 构建完整的 URL
+      const baseUrl = this.form.url.split('?')[0]
+      this.form.url = queryString ? `${baseUrl}?${queryString}` : baseUrl
+    },
+    removeContentType() {
+      let index = this.form.header.findIndex(header => header.key === 'Content-Type')
+      if (this.form.header.findIndex(header => header.key === 'Content-Type') !== -1) {
+        // 删除找到的 "Content-Type" 键的对象
+        this.form.header.splice(index, 1)
+      }
+    },
+    addContentType(contentType) {
+      this.form.header.push({
+        key: 'Content-Type',
+        value: contentType
+      })
+    },
+    onModeChanged(mode) {
+      this.removeContentType()
+      switch (mode) {
+        case 'formdata':
+          this.addContentType('multipart/form-data')
+          break
+        case 'urlencoded':
+          this.addContentType('application/x-www-form-urlencoded')
+          break
+        case 'json':
+          this.addContentType('application/json')
+          break
+        default:
+          break
+      }
     },
     beautify() {
-      this.form.body = JSON.stringify(JSON.parse(this.form.body), null, 4)
+      this.form.body.raw = JSON.stringify(JSON.parse(this.form.body.raw), null, 4)
+    },
+    action() {
+      let data = JSON.parse(JSON.stringify(this.form))
+      switch (this.form.body.mode) {
+        case 'none':
+          delete data.body
+          break
+        case 'formdata':
+          delete data.body.urlencoded
+          delete data.body.raw
+          break
+        case 'urlencoded':
+          delete data.body.formdata
+          delete data.body.raw
+          break
+        case 'json':
+          delete data.body.formdata
+          delete data.body.urlencoded
+          break
+        default:
+          break
+      }
+      // console.log('form', this.form)
+      this.$emit('action', data)
     },
   }
 }
