@@ -1,6 +1,6 @@
 {
   "name": "vue-api-ui",
-  "version": "0.2.0",
+  "version": "0.2.7",
   "private": true,
   "scripts": {
     "serve": "vue-cli-service serve",
@@ -9,7 +9,7 @@
     "lib": "vue-cli-service build --target lib --name vue-api-ui --dest lib packages/index.js"
   },
   "dependencies": {
-    "@tudan110/vue-editable-cell": "^0.9.2",
+    "@tudan110/vue-editable-cell": "^0.9.3",
     "core-js": "^3.8.3",
     "element-ui": "^2.15.14",
     "vue": "^2.6.14"

@@ -92,7 +92,6 @@ export default {
       this.keyValueData.push({
         key: null,
         value: null,
-        editMode: true
       })
     },
     deleteRow(row, index) {

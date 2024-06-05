@@ -57,6 +57,7 @@
             <el-button
                 v-if="form.body.mode === 'json'"
                 type="primary"
+                size="mini"
                 round
                 @click="beautify()"
             >格式化
@@ -64,23 +65,27 @@
 
           </div>
 
-          <template v-if="form.body.mode === 'formdata'">
-            <key-value-table :value="form.body.formdata"/>
-          </template>
+          <div class="request-body">
 
-          <template v-if="form.body.mode === 'urlencoded'">
-            <key-value-table :value="form.body.urlencoded"/>
-          </template>
+            <template v-if="form.body.mode === 'formdata'">
+              <key-value-table :value="form.body.formdata"/>
+            </template>
 
-          <template v-if="form.body.mode === 'json'">
-            <el-input
-                type="textarea"
-                :rows="6"
-                placeholder="RequestBody"
-                v-model="form.body.raw"
-                style="margin-top: 10px">
-            </el-input>
-          </template>
+            <template v-if="form.body.mode === 'urlencoded'">
+              <key-value-table :value="form.body.urlencoded"/>
+            </template>
+
+            <template v-if="form.body.mode === 'json'">
+              <el-input
+                  type="textarea"
+                  :rows="6"
+                  placeholder="RequestBody"
+                  v-model="form.body.raw"
+              >
+              </el-input>
+            </template>
+
+          </div>
 
         </el-tab-pane>
 
@@ -107,7 +112,8 @@ import 'element-ui/lib/theme-chalk/index.css'
 import VueEditableCell from '@tudan110/vue-editable-cell'
 import KeyValueTable from './KeyValueTable'
 
-// Element.install(Vue)
+// Element.install(Vue, {size: 'small', zIndex: 3000})
+// VueEditableCell.install(Vue, {})
 Vue.use(Element, {size: 'small', zIndex: 3000})
 Vue.use(VueEditableCell, {})
 
@@ -137,7 +143,7 @@ export default {
       type: Object,
       default: function () {
         return {
-          url: null,
+          url: '',
           method: 'GET',
           header: [], // {key:'Content-Type',value:'application/json',}
           query: [], // key, value
@@ -265,7 +271,9 @@ export default {
       let data = JSON.parse(JSON.stringify(this.form))
       switch (this.form.body.mode) {
         case 'none':
-          delete data.body
+          delete data.body.formdata
+          delete data.body.urlencoded
+          delete data.body.raw
           break
         case 'formdata':
           delete data.body.urlencoded
@@ -283,6 +291,7 @@ export default {
           break
       }
       // console.log('form', this.form)
+      this.$emit('update:value', data)
       this.$emit('action', data)
     },
   }
@@ -302,18 +311,24 @@ export default {
   margin-top: 16px;
 }
 
-.content-type {
-  display: flex;
-  justify-content: space-between;
-}
-
 .request-content {
   margin-top: 16px;
+  margin-bottom: 16px;
 }
 
-.response-content {
-  margin-top: 16px;
+.content-type {
+  height: 28px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
 }
+
+.request-body {
+  margin-top: 10px;
+}
+
+/*.response-content {
+}*/
 
 /* 全局滚动条样式 start */
 ::v-deep ::-webkit-scrollbar {
