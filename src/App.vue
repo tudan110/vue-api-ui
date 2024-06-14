@@ -1,6 +1,6 @@
 <template>
   <div id="app">
-    <VueApiUi :value.sync="value" @action="test" />
+    <VueApiUi ref="apiUi" :value.sync="value" @action="test" />
   </div>
 </template>
 
@@ -18,6 +18,7 @@ export default {
     test(data) {
       console.log('data', data)
       console.log('value', this.value)
+      console.log('this.$refs.apiUi.getData()', this.$refs.apiUi.getData())
     },
   }
 }

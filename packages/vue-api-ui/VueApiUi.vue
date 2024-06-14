@@ -3,8 +3,17 @@
 
     <!-- URL -->
     <div class="request-url">
-      <el-input placeholder="请输入内容" v-model="form.url" class="input-with-select" @input="parseUrlToParams">
-        <el-select v-model="form.method" slot="prepend" placeholder="请选择">
+      <el-input
+          placeholder="请输入内容"
+          v-model="form.url"
+          class="input-with-select"
+          @input="parseUrlToParams"
+      >
+        <el-select
+            v-model="form.method"
+            slot="prepend"
+            placeholder="请选择"
+        >
           <el-option label="GET" value="GET">
             <span style="color: #3a995f;">GET</span>
           </el-option>
@@ -108,6 +117,7 @@
 <script>
 import Vue from 'vue'
 import Element from 'element-ui'
+// import {Button, Input, Option, Radio, RadioGroup, Select, Table, TableColumn, TabPane, Tabs, Tooltip,} from 'element-ui'
 import 'element-ui/lib/theme-chalk/index.css'
 import VueEditableCell from '@tudan110/vue-editable-cell'
 import KeyValueTable from './KeyValueTable'
@@ -115,6 +125,17 @@ import KeyValueTable from './KeyValueTable'
 // Element.install(Vue, {size: 'small', zIndex: 3000})
 // VueEditableCell.install(Vue, {})
 Vue.use(Element, {size: 'small', zIndex: 3000})
+/*Vue.use(Input, {size: 'small', zIndex: 3000})
+Vue.use(Radio, {size: 'small', zIndex: 3000})
+Vue.use(RadioGroup, {size: 'small', zIndex: 3000})
+Vue.use(Select, {size: 'small', zIndex: 3000})
+Vue.use(Option, {size: 'small', zIndex: 3000})
+Vue.use(Button, {size: 'small', zIndex: 3000})
+Vue.use(Table, {size: 'small', zIndex: 3000})
+Vue.use(TableColumn, {size: 'small', zIndex: 3000})
+Vue.use(Tooltip, {size: 'small', zIndex: 3000})
+Vue.use(Tabs, {size: 'small', zIndex: 3000})
+Vue.use(TabPane, {size: 'small', zIndex: 3000})*/
 Vue.use(VueEditableCell, {})
 
 export default {
@@ -178,7 +199,7 @@ export default {
       handler: function (newVal) {
         this.parseParamsToUrl(newVal)
       },
-      deep: true
+      deep: true,
     },
   },
   methods: {
@@ -267,9 +288,9 @@ export default {
     beautify() {
       this.form.body.raw = JSON.stringify(JSON.parse(this.form.body.raw), null, 4)
     },
-    action() {
+    parseFormData() {
       let data = JSON.parse(JSON.stringify(this.form))
-      switch (this.form.body.mode) {
+      switch (data.body.mode) {
         case 'none':
           delete data.body.formdata
           delete data.body.urlencoded
@@ -290,8 +311,18 @@ export default {
         default:
           break
       }
-      // console.log('form', this.form)
+      return data
+    },
+    onDataChanged() {
+      let data = this.parseFormData()
       this.$emit('update:value', data)
+      return data
+    },
+    getData() {
+      return this.onDataChanged()
+    },
+    action() {
+      let data = this.onDataChanged()
       this.$emit('action', data)
     },
   }
