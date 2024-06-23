@@ -20,9 +20,10 @@ const install = function (Vue) {
 if (typeof window !== 'undefined' && window.Vue) {
     install(window.Vue)
 }
-export {
+/*export {
     VueApiUi
-}
+}*/
 export default {
-    install
+    install,
+    ...components
 }

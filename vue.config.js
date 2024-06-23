@@ -1,4 +1,5 @@
 module.exports = {
+    publicPath: './',
     css: { // 是否将组件中的 CSS 提取至一个独立的 CSS 文件中 (而不是动态注入到 JavaScript 中的 inline 代码)。
         extract: false, // 生产环境下是 true，开发环境下是 false
     },
