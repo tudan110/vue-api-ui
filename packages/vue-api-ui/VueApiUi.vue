@@ -221,7 +221,10 @@ export default {
           const [key, value] = param.split('=')
 
           // 将解析后的 key 和 value 添加到 query 数组中
-          query.push({key, value})
+          query.push({
+            key: decodeURIComponent(key),
+            value: decodeURIComponent(value),
+          })
         })
       }
 
